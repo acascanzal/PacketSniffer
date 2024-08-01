@@ -33,7 +33,7 @@ def icmpHeader(unprocessedData):
 
 # Function to unpack the TCP header
 def tcpHeader(unprocessedData):
-    sourcePort, destPort, sequence, acknowledgment, offsetAndFlags = unpack("! H H L L H", unprocessedData[:12])
+    sourcePort, destPort, sequence, acknowledgment, offsetAndFlags = unpack("! H H L L H", unprocessedData[:14])
     offset = (offsetAndFlags >> 12) * 4
     urg = (offsetAndFlags & 32) >> 5
     ack = (offsetAndFlags & 16) >> 4
@@ -42,3 +42,8 @@ def tcpHeader(unprocessedData):
     syn = (offsetAndFlags & 2) >> 1
     fin = offsetAndFlags & 1
     return sourcePort, destPort, sequence, acknowledgment, urg, ack, psh, rst, syn, fin, unprocessedData[offset:]
+
+# Function to unpack the UDP header
+def udpHeader(unprocessedData):
+    sourcePort, destPort, size = unpack("! H H 2x H", unprocessedData[:8])
+    return sourcePort, destPort, size, unprocessedData[8:]
