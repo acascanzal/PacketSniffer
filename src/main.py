@@ -34,11 +34,6 @@ while True:
             sourcePort, destPort, size, data = snifferFunctions.udpHeader(ipHeaderData)
             printFunctions.printUdpHeader(sourcePort, destPort, size)
 
-        #other
-        #else:
-
-    #else:
-
 
 
 
