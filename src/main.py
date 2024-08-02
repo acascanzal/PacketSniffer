@@ -9,7 +9,7 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor  # Importar ThreadPoolExecutor
 
 # Number of producer processes to process the packets and write the logs
-poolWriterNumber = 4
+poolWriterNumber = 50
 
 # Number of consumer processes to create
 poolVerifierNumber = 100
@@ -30,9 +30,8 @@ def packetCapture(queue):
 def principalFunction(queue,processedPackets,logFile,lock):
     
     while True:
-        print("Waiting for data")
 
-        unprocessedData = queue.get_nowait()
+        unprocessedData = queue.get()
         
         destMac, srcMac, ethProt, ethernetHeaderData = snifferFunctions.ethernetHeader(unprocessedData)
         
@@ -57,6 +56,8 @@ def principalFunction(queue,processedPackets,logFile,lock):
                     "srcMac": srcMac,
                     "sourcePort": sourcePort,
                     "destPort": destPort,
+                    "src": src,
+                    "target": target,
                     "sequence": sequence,
                     "acknowledgment": acknowledgment,
                     "urg": urg,
@@ -73,17 +74,19 @@ def principalFunction(queue,processedPackets,logFile,lock):
             elif ipProt == 17:
                 sourcePort, destPort, size, data = snifferFunctions.udpHeader(ipHeaderData)
                 printFunctions.printUdpHeader(sourcePort, destPort, size)
-                packageImportantData = {
-                    "destMac": destMac,
-                    "srcMac": srcMac,
-                    "sourcePort": sourcePort,
-                    "destPort": destPort,
-                    "size": size,
-                }
-                with lock:
-                    logWritingFunctions.writeLog(logFile, packageImportantData)
+                # packageImportantData = {
+                #     "destMac": destMac,
+                #     "srcMac": srcMac,
+                #     "src": src,
+                #     "target": target,
+                #     "sourcePort": sourcePort,
+                #     "destPort": destPort,
+                #     "size": size,
+                # }
+                # with lock:
+                #     logWritingFunctions.writeLog(logFile, packageImportantData)
                 
-                processedPackets.put(packageImportantData)
+                # processedPackets.put(packageImportantData)
                 
 
 if __name__ == "__main__":
@@ -93,23 +96,20 @@ if __name__ == "__main__":
 
 
     #create a process to run the principal function
-    snifferProcess = multiprocessing.Process(target=packetCapture, args=(rawPackets))
+    snifferProcess = multiprocessing.Process(target=packetCapture, args=(rawPackets,))
     snifferProcess.start()
 
 
     #create a pool of consumer processes
-    # with multiprocessing.Pool(poolWriterNumber) as writerPool:
-    #     for _ in range(poolWriterNumber):
-    #         writerPool.apply_async(principalFunction, args=(rawPackets,processedPackets,logFile,lock))
     poolWritingExecutor = ThreadPoolExecutor(max_workers=poolWriterNumber)
     for _ in range(poolWriterNumber):
         poolWritingExecutor.submit(principalFunction, rawPackets, processedPackets, logFile, lock)
     
 
     #create a pool of verifier processes
-    # with multiprocessing.Pool(poolVerifierNumber) as verifierPool:
-    #     for _ in range(poolVerifierNumber):
-    #         verifierPool.apply_async(procesoConsumir, args=(processedPackets,))  #CHANGE THIS LINE TO A FUNCTION THAT CONSUMES THE DATA
+    # poolWritingExecutor = ThreadPoolExecutor(max_workers=poolWriterNumber)
+    # for _ in range(poolWriterNumber):
+    #     poolWritingExecutor.submit(principalFunction, rawPackets, processedPackets, logFile, lock)
         
     snifferProcess.join()
 
