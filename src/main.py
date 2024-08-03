@@ -5,6 +5,7 @@ import socket
 from sniffer import snifferFunctions
 from utils import printFunctions
 from utils import logWritingFunctions
+from utils import utils
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor  # Importar ThreadPoolExecutor
 
@@ -50,6 +51,7 @@ def principalFunction(queue,processedPackets,logFile,lock):
             # TCP
             elif ipProt == 6:
                 sourcePort, destPort, sequence, acknowledgment, urg, ack, psh, rst, syn, fin, data = snifferFunctions.tcpHeader(ipHeaderData)
+                domainname = utils.getDomain(target)
                 printFunctions.printTcpHeader(sourcePort, destPort, sequence, acknowledgment, urg, ack, psh, rst, syn, fin)
                 packageImportantData = {
                     "destMac": destMac,
@@ -58,6 +60,7 @@ def principalFunction(queue,processedPackets,logFile,lock):
                     "destPort": destPort,
                     "src": src,
                     "target": target,
+                    "domainname": domainname,
                     "sequence": sequence,
                     "acknowledgment": acknowledgment,
                     "urg": urg,
@@ -74,11 +77,14 @@ def principalFunction(queue,processedPackets,logFile,lock):
             elif ipProt == 17:
                 sourcePort, destPort, size, data = snifferFunctions.udpHeader(ipHeaderData)
                 printFunctions.printUdpHeader(sourcePort, destPort, size)
+                domainname = utils.getDomain(target)
+
                 # packageImportantData = {
                 #     "destMac": destMac,
                 #     "srcMac": srcMac,
                 #     "src": src,
                 #     "target": target,
+                #     "domainname": domainname,
                 #     "sourcePort": sourcePort,
                 #     "destPort": destPort,
                 #     "size": size,
